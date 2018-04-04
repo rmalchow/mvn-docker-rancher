@@ -1,0 +1,56 @@
+#!/bin/bash
+
+function check_unstaged() {
+	git diff --exit-code 2>&1 > /dev/null
+	if [ "$?" != "0" ]; then
+		echo "there are unstaged changes .. adding"
+		git add .
+	fi
+}
+
+function check_uncommited() {
+	git diff --cached --exit-code  2>&1 > /dev/null
+	if [ "$?" != "0" ]; then
+		echo "there are uncommitted changes ... committed "
+		git commit -a -m "[ci skip] ${a}"
+	fi
+}
+
+
+function current_version() {
+	mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version |grep "^[0-9]"
+}
+
+function current_project() {
+	mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.name |grep -v "^\[" |grep -v "^Download"
+}
+
+function to_release() {
+    echo "$1" | sed s:"[^0-9.]":"":g
+}
+
+function next_snapshot() {
+    components=`echo "$1" | sed s:"[^0-9.]":"":g| sed s:"\.":" ":g`
+    i=0
+    for c in $components; do
+        a[i]=$c
+		let "i++"
+    done
+    d=${a[2]}
+    let "d++"
+    a[2]=$d
+    echo "${a[0]}.${a[1]}.${a[2]}"
+}
+
+
+set +e
+git commit -a -m "[ci skip] release prepare $rel" 
+set -e
+mvn versions:update-properties -DallowSnapshots=false -DexcludeProperties=springframework.version,springframework.ldap.version,springboot.version,spring.cloud.version,springsecurity.version,springboot.zuul.version,springboot.eureka.version -s ./settings.xml
+mvn --batch-mode versions:set -DnewVersion=$rel
+mvn clean install docker:build docker:push -s settings.xml
+
+echo " ### commit result"
+set +e
+git commit -a -m "[ci skip] released $rel" 
+
