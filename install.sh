@@ -9,7 +9,7 @@ yum install java-1.8.0-openjdk-headless -y
 yum install apache-maven -y
 yum install docker-ce -y
 yum install git -y
+yum install bzip2 -y
 wget https://github.com/rancher/cli/releases/download/v0.6.7/rancher-linux-amd64-v0.6.7.tar.gz
 tar -xzf rancher-linux-amd64-v0.6.7.tar.gz
 mv rancher-v0.6.7/rancher /usr/local/bin/
-
